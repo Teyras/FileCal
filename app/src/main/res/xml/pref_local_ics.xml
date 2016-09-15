@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <EditTextPreference
+        android:capitalize="none"
+        android:defaultValue="@string/pref_default_calendar_name"
+        android:inputType="text"
+        android:key="name"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_calendar_name" />
+    <Preference
+        android:title="@string/pref_calendar_path"
+        android:key="calendar_path"/>
+    <SwitchPreference
+        android:title="@string/pref_import_alarms"
+        android:key="import_alarms"/>
+    <SwitchPreference
+        android:title="@string/pref_sync_bidirectional"
+        android:key="sync_bidirectional"/>
+</PreferenceScreen>

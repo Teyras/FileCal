@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <Preference android:key="local_ics" android:title="@string/pref_header_local_ics"/>
+    <Preference android:key="remote_ics" android:title="@string/pref_header_remote_ics"/>
+</PreferenceScreen>
