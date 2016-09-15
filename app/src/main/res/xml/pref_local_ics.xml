@@ -16,6 +16,9 @@
         android:title="@string/pref_import_alarms"
         android:key="import_alarms"/>
     <SwitchPreference
+        android:title="@string/pref_keep_local"
+        android:key="keep_local"/>
+    <SwitchPreference
         android:title="@string/pref_sync_bidirectional"
         android:key="sync_bidirectional"/>
 </PreferenceScreen>

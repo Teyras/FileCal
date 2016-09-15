@@ -1,7 +1,9 @@
 package cz.bucharjan.filecal.ui;
 
 
+import android.accounts.Account;
 import android.accounts.AccountAuthenticatorActivity;
+import android.accounts.AccountManager;
 import android.annotation.TargetApi;
 import android.app.Fragment;
 import android.app.FragmentManager;
@@ -26,13 +28,16 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 
 import cz.bucharjan.filecal.R;
+import cz.bucharjan.filecal.config.AccountConfig;
+import cz.bucharjan.filecal.config.AccountStorage;
+import cz.bucharjan.filecal.config.LocalIcsConfig;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On
  * handset devices, settings are presented as a single list. On tablets,
  * settings are split by category, with category headers shown to the left of
  * the list of settings.
- * <p>
+ * <p/>
  * See <a href="http://developer.android.com/design/patterns/settings.html">
  * Android Design: Settings</a> for design guidelines and the <a
  * href="http://developer.android.com/guide/topics/ui/settings.html">Settings
@@ -43,6 +48,9 @@ public class AccountSettingsActivity extends AppCompatActivity {
     public final static String EXTRA_NO_HEADERS = ":android:no_headers";
     public final static String EXTRA_SHOW_FRAGMENT = ":android:show_fragment";
     private static final String TAG = "FileCal.AccountSettings";
+    public static final String ACCOUNT_TYPE = "cz.bucharjan.filecal";
+    private AccountManager accountManager;
+    private AccountStorage accountStorage;
 
     /**
      * A preference value change listener that updates the preference's summary
@@ -97,6 +105,16 @@ public class AccountSettingsActivity extends AppCompatActivity {
         }
     };
 
+    private SettingsFragmentResultListener resultListener = new SettingsFragmentResultListener() {
+        @Override
+        public void onResult(AccountConfig config) {
+            Account account = new Account(config.getName(), ACCOUNT_TYPE);
+            accountManager.addAccountExplicitly(account, "", null);
+            accountStorage.save(account, config);
+            finish();
+        }
+    };
+
     /**
      * Binds a preference's summary to its value. More specifically, when the
      * preference's value is changed, its summary (line of text below the
@@ -121,11 +139,14 @@ public class AccountSettingsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        accountManager = AccountManager.get(this);
+        accountStorage = new AccountStorage(accountManager);
+
         setContentView(R.layout.new_account);
         setupActionBar();
 
         CalendarTypeFragment fragment = new CalendarTypeFragment();
-        fragment.setFragmentSwitcher(switcher);
+        fragment.setDependencies(switcher, resultListener);
 
         switcher.switchFragment(fragment);
     }
@@ -143,10 +164,12 @@ public class AccountSettingsActivity extends AppCompatActivity {
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static class CalendarTypeFragment extends PreferenceFragment {
-        FragmentSwitcher switcher;
+        private FragmentSwitcher switcher;
+        private SettingsFragmentResultListener resultListener;
 
-        public void setFragmentSwitcher(FragmentSwitcher switcher) {
+        public void setDependencies(FragmentSwitcher switcher, SettingsFragmentResultListener resultListener) {
             this.switcher = switcher;
+            this.resultListener = resultListener;
         }
 
         @Override
@@ -158,7 +181,9 @@ public class AccountSettingsActivity extends AppCompatActivity {
                 @Override
                 public boolean onPreferenceClick(Preference preference) {
                     if (switcher != null) {
-                        switcher.switchFragment(new LocalIcsPreferenceFragment());
+                        LocalIcsPreferenceFragment fragment = new LocalIcsPreferenceFragment();
+                        fragment.setResultListener(resultListener);
+                        switcher.switchFragment(fragment);
                     }
 
                     return true;
@@ -170,6 +195,12 @@ public class AccountSettingsActivity extends AppCompatActivity {
     public static class LocalIcsPreferenceFragment extends PreferenceFragment {
         private static final int FILE_SELECT_CODE = 0;
         public static final int REQUEST_CODE = 1;
+
+        private SettingsFragmentResultListener resultListener;
+
+        public void setResultListener(SettingsFragmentResultListener resultListener) {
+            this.resultListener = resultListener;
+        }
 
         @Override
         public void onCreate(Bundle savedInstanceState) {
@@ -224,10 +255,26 @@ public class AccountSettingsActivity extends AppCompatActivity {
             }
 
             if (id == R.id.action_save) {
-                Log.d(TAG, "bagr");
+                submit();
+                return true;
             }
 
             return super.onOptionsItemSelected(item);
+        }
+
+        private void submit() {
+            SharedPreferences preferences = this.getPreferenceManager().getSharedPreferences();
+            LocalIcsConfig config = new LocalIcsConfig(
+                    preferences.getString("name", null),
+                    preferences.getString("calendar_path", null),
+                    preferences.getBoolean("import_alarms", false),
+                    preferences.getBoolean("keep_local", true),
+                    preferences.getBoolean("sync_bidirectional", true)
+            );
+
+            if (resultListener != null) {
+                resultListener.onResult(config);
+            }
         }
 
         @Override
