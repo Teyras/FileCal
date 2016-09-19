@@ -188,8 +188,8 @@ public class AndroidEventRepository implements EventRepository {
         values.put(CalendarContract.Events.EVENT_LOCATION, event.getLocation());
         values.put(CalendarContract.Events.ORGANIZER, event.getOrganizer());
         values.put(CalendarContract.Events.AVAILABILITY, event.isAvailable()
-                ? CalendarContract.Events.AVAILABILITY_FREE
-                : CalendarContract.Events.AVAILABILITY_BUSY);
+                 ? CalendarContract.Events.AVAILABILITY_FREE
+                 : CalendarContract.Events.AVAILABILITY_BUSY);
         values.put(CalendarContract.Events.RRULE, joinStrings(event.getRecurrenceRules()));
         values.put(CalendarContract.Events.RDATE, joinDates(event.getRecurrenceDates()));
         values.put(CalendarContract.Events.EXRULE, joinStrings(event.getRecurrenceExclusionRules()));

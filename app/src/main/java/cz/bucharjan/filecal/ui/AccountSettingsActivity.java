@@ -8,6 +8,7 @@ import android.annotation.TargetApi;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -20,6 +21,7 @@ import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
+import android.provider.CalendarContract;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -51,6 +53,8 @@ public class AccountSettingsActivity extends AppCompatActivity {
     public static final String ACCOUNT_TYPE = "cz.bucharjan.filecal";
     private AccountManager accountManager;
     private AccountStorage accountStorage;
+
+    private boolean newAccount;
 
     /**
      * A preference value change listener that updates the preference's summary
@@ -108,12 +112,30 @@ public class AccountSettingsActivity extends AppCompatActivity {
     private SettingsFragmentResultListener resultListener = new SettingsFragmentResultListener() {
         @Override
         public void onResult(AccountConfig config) {
-            Account account = new Account(config.getName(), ACCOUNT_TYPE);
-            accountManager.addAccountExplicitly(account, "", null);
-            accountStorage.save(account, config);
-            finish();
+            if (newAccount) {
+                Account account = new Account(config.getName(), ACCOUNT_TYPE);
+                accountManager.addAccountExplicitly(account, "", null);
+                Uri calendarUri = createCalendar(config.getName());
+                Integer id = Integer.parseInt(calendarUri.getLastPathSegment());
+                accountStorage.save(account, config.withCalendar(id));
+                finish();
+            }
         }
     };
+
+    private Uri createCalendar(String accountName) {
+        Uri uri = CalendarContract.Events.CONTENT_URI.buildUpon()
+                .appendQueryParameter(android.provider.CalendarContract.CALLER_IS_SYNCADAPTER, "true")
+                .appendQueryParameter(CalendarContract.Calendars.ACCOUNT_NAME, accountName)
+                .appendQueryParameter(CalendarContract.Calendars.ACCOUNT_TYPE, ACCOUNT_TYPE).build();
+
+        ContentValues values = new ContentValues();
+        values.put(CalendarContract.Calendars.ACCOUNT_TYPE, ACCOUNT_TYPE);
+        values.put(CalendarContract.Calendars.ACCOUNT_NAME, accountName);
+        values.put(CalendarContract.Calendars.NAME, accountName);
+
+        return getContentResolver().insert(uri, values);
+    }
 
     /**
      * Binds a preference's summary to its value. More specifically, when the
@@ -141,6 +163,8 @@ public class AccountSettingsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         accountManager = AccountManager.get(this);
         accountStorage = new AccountStorage(accountManager);
+
+        newAccount = getIntent().getBooleanExtra(KEY_NEW_ACCOUNT, false);
 
         setContentView(R.layout.new_account);
         setupActionBar();
